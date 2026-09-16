@@ -1,7 +1,7 @@
 ---
 name: easypay
 description: EasyPay payments — create products, payment links, invoices and request payouts via natural language. Use when the user mentions payment processing, Stripe, Mercury, crypto invoices, T-Bank, СБП, balance, payout, EasyPay, или просит «принять оплату», «создать платёжку», «выставить инвойс», «вывести деньги».
-version: 0.10.0
+version: 0.11.0
 ---
 
 # EasyPay payments skill
@@ -171,6 +171,8 @@ EasyPay использует флаг `is_test` на уровне партнёр
 1. `list_partner_saved_payout_recipients` → если получатель уже есть, использовать его id.
 2. `preview_partner_payout_options` с суммой и валютой → партнёр видит маршруты, комиссии, ETA.
 3. Партнёр подтверждает маршрут → `create_partner_payout_request` (обязательно после preview — партнёр должен увидеть маршруты и при необходимости выбрать другой источник средств). Получатель задаётся либо `recipient_contractor` (точное совпадение с сохранённым получателем), либо `recipient_free_form` — одно из двух обязательно.
+   **Крипто-выплата обязана сказать, КУДА:** сеть и полный адрес кошелька — в `destination_free_form`, ровно как их дал партнёр («USDT TRC-20 T…»). Адрес не сокращайте и не додумывайте. Без этого поля крипто-заявка вернёт `DESTINATION_REQUIRED` — спросите у партнёра сеть и адрес.
+   **Кошелёк ⇒ валюта `CRYPTO`, а не `USD`.** Если партнёр хочет «вывести доллары на USDT-кошелёк», это `target_currency: "CRYPTO"`: доллары сконвертируются сами. Заявка в `USD` уходит банковским переводом и считается без сетевых комиссий.
 4. Получили `ACTOR_REQUIRED` — это **не** «выплаты через агента запрещены». Деньги двигает только ключ, привязанный к сотруднику: у партнёра либо есть личный ключ (`verify_partner_credentials` → `auth_key_type: "personal_employee"`) — тогда пусть пропишет его в MCP-конфиг, либо он оформляет выплату в мини-аппе (https://t.me/easypay_self_service_bot/dashboard).
 5. **Скажите явно**: запрос ушёл в очередь EasyPay ops, выплата произойдёт в рамках SLA (не моментально).
 
