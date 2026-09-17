@@ -8,7 +8,7 @@ Connect your AI agent to **EasyPay** in one command. Speak natural language:
 > «Выставь банковский инвойс на $1200 john@example.com»
 > «Организуй выплату подрядчику в РФ на 200 000 ₽ с наших долларов»
 
-The skill teaches your agent the EasyPay vocabulary (Stripe / Mercury / Crypto / T-Bank, USD / EUR / GBP / BRL / RUB / CRYPTO, product lifecycle, payout flow) and which of the 29 MCP tools to call for each job.
+The skill teaches your agent the EasyPay vocabulary (Stripe / Mercury / Crypto / T-Bank, USD / EUR / GBP / BRL / RUB / CRYPTO, product lifecycle, payout flow) and which of the 30 MCP tools to call for each job.
 
 ---
 
@@ -126,7 +126,7 @@ Permission gating is enforced per endpoint — `verify_partner_credentials` retu
 
 ## What's inside
 
-- [`SKILL.md`](./SKILL.md) — the system prompt: 29 tools, EasyPay domain language, JTBD flows, anti-patterns.
+- [`SKILL.md`](./SKILL.md) — the system prompt: 30 tools, EasyPay domain language, JTBD flows, anti-patterns.
 - [`LICENSE`](./LICENSE) — MIT.
 
 ---

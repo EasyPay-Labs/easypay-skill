@@ -6,7 +6,7 @@
 
 The installable skill EasyPay partners give to their AI agent (Claude Code / Cursor /
 Codex / Gemini CLI). It teaches the agent the EasyPay vocabulary and routes natural-language
-requests to the 29 MCP tools served at `mcp.appload.tech`. The repo itself IS the product:
+requests to the 30 MCP tools served at `mcp.appload.tech`. The repo itself IS the product:
 `SKILL.md` (agent instructions) + `README.md` (human install guide) + `DEPLOY.md`.
 
 ## Editing rules
