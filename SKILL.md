@@ -1,7 +1,7 @@
 ---
 name: easypay
 description: EasyPay payments — create products, payment links, invoices and request payouts via natural language. Use when the user mentions payment processing, Stripe, Mercury, crypto invoices, T-Bank, СБП, balance, payout, EasyPay, или просит «принять оплату», «создать платёжку», «выставить инвойс», «вывести деньги».
-version: 0.13.0
+version: 0.13.1
 ---
 
 # EasyPay payments skill
@@ -151,13 +151,13 @@ EasyPay использует флаг `is_test` на уровне партнёр
 ### J1.4 — Bill an existing US/EU client by invoice (USD)
 1. `list_partner_invoiceable_products({currency:'USD'})` → найти продукт, взять его `product_id`.
 2. Если нужного продукта нет — `create_partner_mercury_invoiceable_product` (USD), дождаться approve, затем повторить шаг 1.
-3. `create_partner_mercury_invoice` с `product_id` (из списка) + `customer_email` (+ опц. `unit_amount_override`, если сумма отличается от дефолтной цены продукта).
+3. `create_partner_mercury_invoice` с `product_id` (из списка) + `customer_email` (+ опц. `unit_amount_override`, если сумма отличается от дефолтной цены продукта — **в центах**, как `unit_amount` в списке продуктов: $450 → `45000`, а `450` выставит инвойс на $4.50).
 4. Mercury автоматически отправит инвойс клиенту по email. Партнёру скажите номер инвойса для трекинга.
 
 ### J1.3 — Accept payment from a Russian B2C customer (RUB)
 0. `list_partner_ruble_checkouts` → посмотреть, чем партнёр уже может принять рубли. Если есть подходящий `static_link` — часто ничего создавать не нужно: отдайте его `url` (при необходимости с ценой через `?d=` вместе с `order_id`).
 1. `list_partner_invoiceable_products({currency:'RUB'})` → найти RUB-продукт и его `product_id`. Если продукта нет — `create_partner_ruble_payable_product`, дождаться approve.
-2. `create_partner_tbank_payment` с `product_id` + `customer_email` ИЛИ `customer_phone` (+ опц. `unit_amount_override` в рублях, + опц. `external_order_id` — идентификатор заказа партнёра, если платёж нужно потом сопоставить с заказом автоматически).
+2. `create_partner_tbank_payment` с `product_id` + `customer_email` ИЛИ `customer_phone` (+ опц. `unit_amount_override` **в копейках**, как `unit_amount` в списке продуктов: 790 ₽ → `79000`, а `790` создаст платёж на 7,90 ₽ — сверяйте `amount_rub` в ответе перед тем, как отдать ссылку клиенту, + опц. `external_order_id` — идентификатор заказа партнёра, если платёж нужно потом сопоставить с заказом автоматически).
 3. Отдайте клиенту `sbp_url` (СБП, `qr.nspk.ru`) — это дешевле для партнёра по эквайрингу; `payment_url` держите как запасной вариант и для тех, кто хочет платить картой. Если `sbp_url` пришёл `null` — отдавайте только `payment_url`. Обе ссылки партнёр увидит и у себя в Telegram-чате.
 4. Если у партнёра не подключён T-Bank — `request_additional_payment_methods` со словом `russia`.
 
