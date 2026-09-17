@@ -1,7 +1,7 @@
 ---
 name: easypay
 description: EasyPay payments — create products, payment links, invoices and request payouts via natural language. Use when the user mentions payment processing, Stripe, Mercury, crypto invoices, T-Bank, СБП, balance, payout, EasyPay, или просит «принять оплату», «создать платёжку», «выставить инвойс», «вывести деньги».
-version: 0.12.0
+version: 0.13.0
 ---
 
 # EasyPay payments skill
@@ -23,7 +23,7 @@ If a tool returns `Invalid API key`, instruct the partner to re-check their MCP 
 - `{success: true, ...}` — сделано.
 - `{success: false, error_code, error_message}` — не сделано. Никогда не отчитывайтесь партнёру об успехе, не проверив `success`; не выдумывайте id, ссылки и суммы, которых в ответе нет.
 
-Коды, которые стоит узнавать в лицо: `ACTOR_REQUIRED` (нужен ключ, привязанный к сотруднику — см. J2/J16), `CROSS_TENANT_ATTEMPT` (id существует, но принадлежит другому партнёру), `DATA_INTEGRITY_ERROR` (проблема на стороне EasyPay, не ошибка партнёра — предложите повторить через минуту, при повторении — в команду заботы), `PRODUCT_NOT_APPROVED` (продукт ещё на модерации).
+Коды, которые стоит узнавать в лицо: `ACTOR_REQUIRED` (нужен ключ, привязанный к сотруднику — см. J2/J16), `CROSS_TENANT_ATTEMPT` (id существует, но принадлежит другому партнёру), `DATA_INTEGRITY_ERROR` (проблема на стороне EasyPay, не ошибка партнёра — предложите повторить через минуту, при повторении — в команду заботы), `PRODUCT_NOT_APPROVED` (продукт ещё на модерации), а на выплатах партнёра с кредитной линией — `CREDIT_LIMIT_EXCEEDED`, `CREDIT_LINE_UNAVAILABLE`, `CREDIT_LINE_UNSUPPORTED` (что делать с каждым — J2/J16).
 
 ## Available tools
 
@@ -54,9 +54,9 @@ All tools live under the MCP server `easypay-payments-mcp`.
 - **`list_partner_ruble_checkouts`** — показать всю рублёвую поверхность партнёра одним списком. Две сущности различаются полем `kind`: `static_link` — **постоянная** страница оплаты по адресу из `url`, её можно поставить на сайт или в бота, она не истекает; `one_off_product` — запись каталога, из которой `create_partner_tbank_payment` делает ссылку на 24 часа (передайте её `product_id`). У каждой строки: `taxation` (`usn` — УСН 6% или `patent`) — **`null` значит «не определён»** (продукт ещё на модерации либо режим вне контракта), и подавать это партнёру как УСН нельзя; `payment_flow` (`card_and_sbp` — полная форма T-Bank, `sbp_only` — только СБП-QR, карты закрыты); `price_rub` с границами `price_min_rub`/`price_max_rub` (у `one_off_product` границ нет — `null`) и флагом `price_overridable`; `status` (`active`, `pending_moderation`, `rejected`, `archived`). Фильтры `kind` и `status_filter` (`active` по умолчанию — показывает продаваемое плюс ожидающее модерации; `all` — вообще всё). Цену постоянной ссылки можно подставить query-параметром `?d=` (base64 от JSON), но **только в паре с `order_id`** — сумма без него игнорируется, и клиент заплатит цену по умолчанию.
 
 ### Money out: balances & payouts
-- **`get_partner_balance`** — show current balance per account: USD (Mercury / Chase), RUB (T-Bank), Crypto. The single source of truth for «сколько у меня сейчас».
+- **`get_partner_balance`** — show current balance per account: USD (Mercury / Chase), RUB (T-Bank), Crypto. The single source of truth for «сколько у меня сейчас». Only if the partner has an open credit line, the response also carries a `credit_line` block (otherwise the field is absent): `debt`, `limit_today`, `free` (limit − debt, can be negative), `spendable_usd` (USD that can be paid out right now without taking the debt over today's limit, already net of `unpaid_requests_usd` — payout requests not paid yet), `next_limit` (`{effective_from, amount}` or `null`), `calculated_through` (date). Amounts are USD strings. `balances.usd` is not replaced — for «сколько могу вывести» quote `spendable_usd`.
 - **`list_partner_mercury_transactions`** — движения по USD-счёту партнёра в Mercury: карточные расходы, входящие wire-переводы, внутренние трансферы, банковские комиссии. Это детализация под балансом, а не Stripe-эквайринг — каналы разные, по id между собой не матчатся. Поля строки: `id`, `amount`/`net_amount` в **мажорных единицах** (USD), знаковые (+ приход / − расход), `fee` всегда `null` (у Mercury нет per-transaction PSP-комиссии), `status` (`completed`/`pending`/`failed`/`deleted`), `transaction_date`, `description`, `type` (тип контракта, например `mercury_card_expense`, `mercury_wire_in`), `counterparty` (название мерчанта), `kind`. Единственный параметр — `limit` (1..100, дефолт 20, новые сверху); **фильтра по датам нет** — берите с запасом и режьте период сами. Mercury только USD и **без тестового режима**: все транзакции боевые. Движения по общим/операционным счетам не возвращаются (их нельзя отнести к одному партнёру). Только что загруженные транзакции появляются с задержкой в несколько минут.
-- **`preview_partner_payout_options`** — given a desired amount and target currency, show available routes with fees and ETA. Маршруты, комиссии и сроки считает бэкенд под конкретную сумму и валюту — не перечисляйте варианты по памяти и не обещайте партнёру конкретный канал, пока не увидели ответ тула.
+- **`preview_partner_payout_options`** — given a desired amount and target currency, show available routes with fees and ETA. Маршруты, комиссии и сроки считает бэкенд под конкретную сумму и валюту — не перечисляйте варианты по памяти и не обещайте партнёру конкретный канал, пока не увидели ответ тула. У партнёра с кредитной линией USD-баланс в расчёте уже равен `credit_line.spendable_usd`, и в ответе есть тот же блок `credit_line`.
 - **`list_partner_saved_payout_recipients`** — list saved payout recipients (contractors, employees) so the partner can pick by name instead of re-entering bank details.
 - **`create_partner_payout_request`** — submit a payout request. **This does not move money instantly** — it creates a request the EasyPay ops team will execute manually within the published SLA.
 
@@ -183,6 +183,10 @@ EasyPay использует флаг `is_test` на уровне партнёр
    **Кошелёк ⇒ валюта `CRYPTO`, а не `USD`.** Если партнёр хочет «вывести доллары на USDT-кошелёк», это `target_currency: "CRYPTO"`: доллары сконвертируются сами. Заявка в `USD` уходит банковским переводом и считается без сетевых комиссий.
 4. Получили `ACTOR_REQUIRED` — это **не** «выплаты через агента запрещены». Деньги двигает только ключ, привязанный к сотруднику: у партнёра либо есть личный ключ (`verify_partner_credentials` → `auth_key_type: "personal_employee"`) — тогда пусть пропишет его в MCP-конфиг, либо он оформляет выплату в мини-аппе (https://t.me/easypay_self_service_bot/dashboard).
 5. **Скажите явно**: запрос ушёл в очередь EasyPay ops, выплата произойдёт в рамках SLA (не моментально).
+6. **Кредитная линия** (только если в ответе preview есть блок `credit_line`). Сумму «сколько можно вывести» берите из ответа, а не считайте сами. Если выбранному варианту нужен долив с карты (`topup_amount_usd` > 0), покажите сумму долива партнёру и передайте её в `create_partner_payout_request` как `accepted_topup_usd` — выбор `secondary_source` согласием на долив не считается, а долив больше подтверждённого вернёт отказ. Отказы из-за линии (заявка не создаётся):
+   - `CREDIT_LIMIT_EXCEEDED` — выплата выводит долг за сегодняшний лимит. В `details` — `max_payable` (в валюте выплаты), `target_currency`, `spendable_usd`. Предложите сумму `max_payable` или меньше, либо заново сделайте preview и передайте показанный долив. Это штатный отказ, не сбой.
+   - `CREDIT_LINE_UNAVAILABLE` — линию сейчас не удалось проверить. Партнёр ни в чём не виноват: повторите через несколько минут. Другая сумма или другой источник не помогут: этот отказ не зависит от суммы.
+   - `CREDIT_LINE_UNSUPPORTED` — выплаты с этой линии пока недоступны; команда заботы уже уведомлена. Если выплата срочная — `send_request_to_easypay_care_team`.
 
 ### J8.6 — «Где я вижу уведомления о платежах?»
 Разведите два разных канала — партнёры их постоянно путают.
