@@ -3,13 +3,13 @@
 ## Где живёт SKILL.md
 
 - **Source of truth:** этот репозиторий, `SKILL.md` в корне. Все правки делаются здесь.
-- **Зеркало для агент-discovery:** `/.well-known/agent-skills/easypay/SKILL.md` на `https://easypay.thenextgen.store` (репозиторий `vanger-cat/easypay-landing`). Опубликовано в индексе `https://easypay.thenextgen.store/.well-known/agent-skills/index.json` по схеме Agent Skills Discovery RFC v0.2.0.
+- **Зеркало для агент-discovery:** `/.well-known/agent-skills/easypay/SKILL.md` на `https://easypay.thenextgen.store` (репозиторий `EasyPay-Labs/easypay-landing`). Опубликовано в индексе `https://easypay.thenextgen.store/.well-known/agent-skills/index.json` по схеме Agent Skills Discovery RFC v0.2.0.
 
 ## При обновлении SKILL.md
 
 1. Закоммитить и запушить изменения в `EasyPay-Labs/easypay-skill@main` (этот репо).
 2. Обновить зеркало на лендинге:
-   - Клонировать / `git pull` репозиторий `vanger-cat/easypay-landing`.
+   - Клонировать / `git pull` репозиторий `EasyPay-Labs/easypay-landing`.
    - Запустить `python scripts/sync_skill.py` — скрипт скачает свежий SKILL.md из main этого репо, перезапишет зеркало и пересчитает sha256 digest в `index.json`.
    - Закоммитить изменения в `easypay-landing`: файлы `.well-known/agent-skills/easypay/SKILL.md` и `.well-known/agent-skills/index.json`.
    - Запушить — GitHub Pages задеплоит за ~30 сек.
