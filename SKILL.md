@@ -1,7 +1,7 @@
 ---
 name: easypay
 description: EasyPay payments — create products, payment links, invoices and request payouts via natural language. Use when the user mentions payment processing, Stripe, Mercury, crypto invoices, T-Bank, СБП, balance, payout, EasyPay, или просит «принять оплату», «создать платёжку», «выставить инвойс», «вывести деньги».
-version: 0.14.3
+version: 0.14.4
 ---
 
 # EasyPay payments skill
@@ -100,7 +100,14 @@ If a partner asks "where do I see notifications?" — they arrive in their perso
 Никогда не обещайте партнёру моментальную ссылку после `create_partner_stripe_product` — модерация может занять часы.
 
 ### Test mode vs Live
-EasyPay использует флаг `is_test` на уровне партнёра / сессии. На тестовом партнёре платежи идут через Stripe test mode, выплаты не реальные. Если видите `is_test: true` в профиле — предупредите партнёра, что это sandbox.
+**Stripe.** EasyPay использует флаг `is_test` на уровне партнёра / сессии. На тестовом партнёре платежи идут через Stripe test mode, выплаты не реальные. Если видите `is_test: true` в профиле — предупредите партнёра, что это sandbox.
+
+### Тестовый рублёвый платёж (T-Bank)
+Рубли тестируются **тестовым товаром**: `create_partner_ruble_payable_product` с `is_test: true` → дождаться одобрения → платёж по нему тестовый сам собой (поле `environment` не нужно).
+- **Где создавать.** Тестовый платёж создаётся только на российском сервере EasyPay: `create_partner_tbank_payment` / `create_partner_tbank_cart_payment` ответят `TEST_PAYMENTS_RU_ONLY` с адресом в `details.ru_url` — тот же запрос с тем же API-ключом отправь туда (REST). Если у тебя только MCP-инструменты, отдай партнёру `details.ru_url` и тело запроса для прямого REST-вызова: повтор через MCP снова получит отказ.
+- **Чем платить.** Тестовый товар работает на DEMO-терминале Т-Банка: проходят **только карты тест-кейсов DEMO** (https://developer.tbank.ru/eacq/intro/errors/test-cases). Успешная оплата — `4300 0000 0000 0777`, срок `12/30`, CVC `111`. Карты из общей таблицы тестовых карт банка — для другого тестового окружения, здесь отказ `REJECTED` 1042. Не бери карту оттуда.
+- **Email покупателя — свой** (партнёра): банк присылает на него письмо «Заказ оплачен».
+- **СБП в тесте** по-настоящему не оплатить: создай платёж, открой `sbp_url` и пришли `payment_id` команде заботы (`send_request_to_easypay_care_team`) — оплату эмулирует EasyPay.
 
 ### Test → Live recipe (помоги партнёру убедиться до перехода на реальные платежи)
 
