@@ -112,13 +112,15 @@ For products and invoices that need EasyPay moderation, you'll get a notificatio
 
 ## Identity controls
 
-Every call returns a successful HTTP response — the outcome is in the body. `{"success": true, ...}` means done; `{"success": false, "error_code": ..., "error_message": ...}` means it didn't happen. Three codes are worth knowing:
+Every call returns a successful HTTP response — the outcome is in the body (one exception: the read quota below). `{"success": true, ...}` means done; `{"success": false, "error_code": ..., "error_message": ...}` means it didn't happen. Three codes are worth knowing:
 
 **`ACTOR_REQUIRED`** — money-moving operations (`create_partner_payout_request`) need an API key bound to a specific employee. A **personal** employee key submits payouts through the agent just fine; a **partner-wide** key doesn't. If you only have a partner-wide key, submit the payout from the EasyPay mini-app instead: [https://t.me/easypay_self_service_bot/dashboard](https://t.me/easypay_self_service_bot/dashboard). Read-only preview (`preview_partner_payout_options`) works with either key. `verify_partner_credentials` tells you which kind you're using (`auth_key_type`).
 
 **`CROSS_TENANT_ATTEMPT`** — the `stripe_product_id` / `payment_link_id` / `recipient_id` your agent referenced exists but belongs to a different account (deliberately not a generic "not found"). Use `list_partner_invoiceable_products` / `list_partner_live_stripe_payment_links` to discover your own IDs.
 
 **`DATA_INTEGRITY_ERROR`** — a server-side issue on EasyPay, not your mistake; the care team gets paged automatically, just retry after a moment.
+
+**`RATE_LIMITED`** (HTTP 429) — read tools (`list_*`, `get_*`, balance, payout preview) share **60 calls per minute and 1,000 calls per UTC day per API key**, MCP and direct API together. The response says which window ran out (`details.window`), its limit and when it resets (`details.resets_at`, `retry_after_ms`, `Retry-After` header). Don't poll for payment status — register a notifications webhook (`register_partner_notifications_webhook`) and payments, refunds and disputes are pushed to you. Write tools are not limited.
 
 Permission gating is enforced per endpoint — `verify_partner_credentials` returns your `permissions` array, so you can ask the agent "what's enabled for me?" instead of discovering it by trial and error.
 
