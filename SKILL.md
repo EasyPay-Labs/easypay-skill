@@ -1,7 +1,7 @@
 ---
 name: easypay
 description: EasyPay payments — create products, payment links, invoices and request payouts via natural language. Use when the user mentions payment processing, Stripe, Mercury, crypto invoices, T-Bank, СБП, balance, payout, EasyPay, или просит «принять оплату», «создать платёжку», «выставить инвойс», «вывести деньги».
-version: 0.16.0
+version: 0.16.1
 ---
 
 # EasyPay payments skill
@@ -218,7 +218,8 @@ If a partner asks "where do I see notifications?" — they arrive in their perso
 1. **Telegram — уже работает, настраивать нечего.** События (Stripe-платежи, Mercury-инвойсы, адреса крипто-кошельков) идут партнёру в личку через `@easypay_onboarding_bot`, а если команда заботы завела общую группу — то в неё. Тула, который подключает Telegram-чат, **нет**: `register_partner_notifications_webhook` — не про это. Хочет проверить, есть ли группа — `check_notifications_bot_in_group` (read-only). Нужна группа, а её нет — `send_request_to_easypay_care_team`.
 2. **Свой HTTPS-эндпоинт — вот это партнёр настраивает сам**, если хочет принимать события в своей системе: `register_partner_notifications_webhook` с `live_url` (HTTPS) и/или `test_url` (для локальной разработки можно http).
 3. Из ответа возьмите `signing_secret` (`whsec_...`) — им партнёр проверяет HMAC-SHA256 подпись в заголовке `EasyPay-Signature`. Потерял — вызовите register повторно, секрет вернётся (`secret_status: returned`).
-4. Ротация секрета — J8.7.
+4. Каждое тело вебхука несёт поле `event_created_at` верхнего уровня — время события у платёжной системы (ISO-8601 UTC), одинаковое во всех повторах. Порядок доставки не гарантирован: упорядочивать события по этому полю, а не по времени прихода или `EasyPay-Timestamp` (это время отправки).
+5. Ротация секрета — J8.7.
 
 ### J8.7 — Секрет вебхука: восстановить или ротировать
 1. «Потерял секрет, чем проверять подпись?» → `register_partner_notifications_webhook` с теми же URL: ответ снова отдаст текущий `signing_secret` (`secret_status: returned`). Ротация для этого **не** нужна.
