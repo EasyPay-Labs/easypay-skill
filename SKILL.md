@@ -1,7 +1,7 @@
 ---
 name: easypay
 description: EasyPay payments — create products, payment links, invoices and request payouts via natural language. Use when the user mentions payment processing, Stripe, Mercury, crypto invoices, T-Bank, СБП, balance, payout, EasyPay, или просит «принять оплату», «создать платёжку», «выставить инвойс», «вывести деньги».
-version: 0.15.0
+version: 0.16.0
 ---
 
 # EasyPay payments skill
@@ -18,12 +18,14 @@ If a tool returns `Invalid API key`, instruct the partner to re-check their MCP 
 
 ## Reading tool responses
 
-Успех и ошибка приходят **одинаково успешным** HTTP-ответом: смысл лежит в теле. Всегда читайте сначала `success`, а не статус запроса — «ответ пришёл» ещё не значит «операция выполнена».
+Успех и ошибка приходят **одинаково успешным** HTTP-ответом: смысл лежит в теле (единственное исключение — лимит чтений, ниже). Всегда читайте сначала `success`, а не статус запроса — «ответ пришёл» ещё не значит «операция выполнена».
 
 - `{success: true, ...}` — сделано.
 - `{success: false, error_code, error_message}` — не сделано. Никогда не отчитывайтесь партнёру об успехе, не проверив `success`; не выдумывайте id, ссылки и суммы, которых в ответе нет.
 
 Коды, которые стоит узнавать в лицо: `ACTOR_REQUIRED` (нужен ключ, привязанный к сотруднику — см. J2/J16), `CROSS_TENANT_ATTEMPT` (id существует, но принадлежит другому партнёру), `DATA_INTEGRITY_ERROR` (проблема на стороне EasyPay, не ошибка партнёра — предложите повторить через минуту, при повторении — в команду заботы), `PRODUCT_NOT_APPROVED` (продукт ещё на модерации), а на выплатах партнёра с кредитной линией — `CREDIT_LIMIT_EXCEEDED`, `CREDIT_LINE_UNAVAILABLE`, `CREDIT_LINE_UNSUPPORTED` (что делать с каждым — J2/J16).
+
+**Лимит чтений.** Инструменты чтения (`list_*`, `get_*`, баланс, `preview_partner_payout_options`) делят на один API-ключ **60 вызовов в минуту и 1 000 в сутки UTC**; MCP и прямой API считаются вместе. Сверх лимита вызов падает с HTTP 429 и телом `RATE_LIMITED`: `details.window` (`minute` | `day`), `details.limit`, `details.resets_at`, `retry_after_ms`. Не повторяйте раньше `resets_at` и не опрашивайте статус оплаты в цикле — подпишите партнёра на вебхук (`register_partner_notifications_webhook`): оплаты, возвраты и споры придут сами. Чтобы найти конкретный заказ, один раз вызовите `list_partner_stripe_transactions` с `client_reference_id` или периодом. Инструменты записи (ссылки, продукты, счета, выплаты) и `verify_partner_credentials` лимитом не ограничены. Если реальной задаче нужно больше — запрос в команду заботы (`send_request_to_easypay_care_team`).
 
 ## Available tools
 
@@ -245,6 +247,7 @@ If a partner asks "where do I see notifications?" — they arrive in their perso
 - ❌ **Don't** promise instant payment link after `create_partner_stripe_product`. Сначала модерация, потом link. То же для `create_partner_mercury_invoiceable_product` и `create_partner_ruble_payable_product` — они только регистрируют продукт в каталоге; инвойс/платёжная ссылка появляются после approve, отдельным вызовом.
 - ❌ **Don't** ask the partner for a Telegram `chat_id` and don't promise to «подключить группу». `register_partner_notifications_webhook` принимает только URL-ы (`live_url` / `test_url`) — параметра `chat_id` у него нет; группу заводит команда заботы, а базовые уведомления и так идут партнёру в личку.
 - ❌ **Don't** rotate the webhook secret just to recover it. Потерянный секрет возвращает сам `register_partner_notifications_webhook` (get-or-create, `secret_status: returned`). Лишняя ротация меняет секрет и запускает grace-окно — это ломает интеграцию партнёра, а не чинит её.
+- ❌ **Don't** poll `list_partner_stripe_transactions` / `get_partner_stripe_payment` to wait for a payment. Чтения ограничены (60/мин, 1 000/сут на ключ) — статус оплаты приходит вебхуком (`register_partner_notifications_webhook`).
 - ❌ **Don't** send several separate subscription links for one tariff. Каждая ссылка — отдельная подписка с отдельным списанием; комбинацию собирайте одной корзиной `create_partner_stripe_cart_payment_link`.
 - ❌ **Don't** mix live and test products in one `create_partner_stripe_promotion_code` call — вернётся `mixed_environment`. И не обещайте, что промокод сработает на ссылке, где ввод промокодов не включён.
 - ❌ **Don't** suggest EUR through Mercury invoice — Mercury только USD.
