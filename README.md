@@ -112,7 +112,7 @@ For products and invoices that need EasyPay moderation, you'll get a notificatio
 
 ## Identity controls
 
-Every call returns a successful HTTP response — the outcome is in the body (one exception: the read quota below). `{"success": true, ...}` means done; `{"success": false, "error_code": ..., "error_message": ...}` means it didn't happen. Three codes are worth knowing:
+Every call returns a successful HTTP response — the outcome is in the body (one exception: the read quota below). `{"success": true, ...}` means done; `{"success": false, "error_code": ..., "error_message": ...}` means it didn't happen. These codes are worth knowing:
 
 **`ACTOR_REQUIRED`** — money-moving operations (`create_partner_payout_request`) need an API key bound to a specific employee. A **personal** employee key submits payouts through the agent just fine; a **partner-wide** key doesn't. If you only have a partner-wide key, submit the payout from the EasyPay mini-app instead: [https://t.me/easypay_self_service_bot/dashboard](https://t.me/easypay_self_service_bot/dashboard). Read-only preview (`preview_partner_payout_options`) works with either key. `verify_partner_credentials` tells you which kind you're using (`auth_key_type`).
 
